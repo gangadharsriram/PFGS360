@@ -598,6 +598,9 @@ class PoseFreeGSplat360BaseModel(Model):
         c2ws_pred[:, :3, :3] = c2ws_pred[:, :3, :3] @ R_edit
 
         os.makedirs(savedir, exist_ok=True)
+        rpe_t = torch.tensor(float("nan"), dtype=c2ws_gt.dtype, device=c2ws_gt.device)
+        rpe_r = torch.tensor(float("nan"), dtype=c2ws_gt.dtype, device=c2ws_gt.device)
+        ate = torch.tensor(float("nan"), dtype=c2ws_gt.dtype, device=c2ws_gt.device)
         try:
             rpe_t, rpe_r, ate, aligned_c2ws_gt, aligned_c2ws_pred = colmap_free_utils.align_cameras_and_worlds(
                 c2ws_gt, c2ws_pred
@@ -607,12 +610,13 @@ class PoseFreeGSplat360BaseModel(Model):
                 aligned_c2ws_gt.cpu().numpy(), aligned_c2ws_pred.cpu().numpy(), savedir, filename=f"{filename}.png"
             )
 
-        except:
+        except Exception as exc:
+            CONSOLE.print(f"Failed to align eval cameras for {filename}: {exc}")
             c2ws_pred_dict = {}
             for idx in range(num_cams):
                 c2ws_pred_dict[f"camera {idx:04d}"] = {
-                    "c2w_R": self.camera_optimizer.selected_poses([idx]).squeeze()[:3, :3].cpu().tolist(),
-                    "c2w_t": self.camera_optimizer.selected_poses([idx]).squeeze()[:3, 3].cpu().tolist(),
+                    "c2w_R": self.eval_camera_optimizer.selected_poses([idx]).squeeze()[:3, :3].cpu().tolist(),
+                    "c2w_t": self.eval_camera_optimizer.selected_poses([idx]).squeeze()[:3, 3].cpu().tolist(),
                 }
             with open(join(savedir, f"{filename}-failed.json"), "w") as f:
                 json.dump(c2ws_pred_dict, f, indent=4)
