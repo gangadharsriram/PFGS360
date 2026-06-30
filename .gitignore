@@ -201,3 +201,10 @@ _debug
 run*.sh
 odgs
 *.mp4
+
+
+.conda-envs
+.conda-packs
+.conda-tmp 
+.pip-cache
+.vscode
